@@ -1,0 +1,180 @@
+{
+  "entities": {
+    "Teacher": {
+      "title": "Teacher",
+      "description": "Information about a teacher, including code, name, and subject",
+      "type": "object",
+      "properties": {
+        "teacherCode": {
+          "type": "string",
+          "description": "Unique identifier code for the teacher"
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Teacher's family name / last name"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Teacher's given name / first name"
+        },
+        "subjectCode": {
+          "type": "string",
+          "description": "Code of the subject taught"
+        },
+        "subjectName": {
+          "type": "string",
+          "description": "Name of the subject taught"
+        }
+      },
+      "required": ["teacherCode", "lastName", "firstName"]
+    },
+    "Class": {
+      "title": "Class",
+      "description": "A student group or class section",
+      "type": "object",
+      "properties": {
+        "classId": {
+          "type": "string",
+          "description": "Unique identifier for the class, e.g., '7A'"
+        },
+        "grade": {
+          "type": "string",
+          "description": "Grade level, e.g., '7', '8'"
+        },
+        "group": {
+          "type": "string",
+          "description": "Class group or letter, e.g., 'A', 'B'"
+        }
+      },
+      "required": ["classId", "grade", "group"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "A single slot of the master class schedule",
+      "type": "object",
+      "properties": {
+        "scheduleId": {
+          "type": "string",
+          "description": "Unique ID, e.g., '7A-Monday-7-8'"
+        },
+        "classId": {
+          "type": "string",
+          "description": "The associated class ID"
+        },
+        "dayOfWeek": {
+          "type": "string",
+          "description": "Day of the week: Monday, Tuesday, etc."
+        },
+        "timeSlot": {
+          "type": "string",
+          "description": "Time range, e.g., '7-8', '8-9'"
+        },
+        "teacherId": {
+          "type": "string",
+          "description": "The teacher's code"
+        }
+      },
+      "required": ["scheduleId", "classId", "dayOfWeek", "timeSlot", "teacherId"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance record for a class",
+      "type": "object",
+      "properties": {
+        "attendanceId": {
+          "type": "string",
+          "description": "Composite key, e.g., '7A-2026-07-14'"
+        },
+        "classId": {
+          "type": "string",
+          "description": "Class being registered"
+        },
+        "date": {
+          "type": "string",
+          "description": "Date of attendance in YYYY-MM-DD"
+        },
+        "records": {
+          "type": "array",
+          "description": "List of slots and their statuses"
+        },
+        "totalA": {
+          "type": "number",
+          "description": "Total absent without permission"
+        },
+        "totalP": {
+          "type": "number",
+          "description": "Total absent with permission"
+        },
+        "totalAbsences": {
+          "type": "number",
+          "description": "Grand total of absences (A + P)"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["attendanceId", "classId", "date", "records"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A system notification logged on Firebase",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique notification ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification heading"
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed body message"
+        },
+        "type": {
+          "type": "string",
+          "description": "Category: info, warning, danger"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["id", "title", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "teachers": {
+      "schema": {
+        "$ref": "entities/Teacher"
+      },
+      "description": "List of active teachers in the system"
+    },
+    "classes": {
+      "schema": {
+        "$ref": "entities/Class"
+      },
+      "description": "Active classes (grades + groups)"
+    },
+    "schedules": {
+      "schema": {
+        "$ref": "entities/Schedule"
+      },
+      "description": "The master weekly teaching schedule"
+    },
+    "attendances": {
+      "schema": {
+        "$ref": "entities/Attendance"
+      },
+      "description": "Daily staff attendance records per class"
+    },
+    "notifications": {
+      "schema": {
+        "$ref": "entities/Notification"
+      },
+      "description": "Logs of triggered notifications in the app"
+    }
+  }
+}

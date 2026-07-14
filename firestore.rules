@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.\\s]+$');
+    }
+
+    function incoming(req) {
+      return req.resource.data;
+    }
+
+    // Teacher Validation
+    function isValidTeacher(data) {
+      return data.keys().hasAll(['teacherCode', 'lastName', 'firstName'])
+        && data.teacherCode is string && data.teacherCode.size() <= 64
+        && data.lastName is string && data.lastName.size() <= 100
+        && data.firstName is string && data.firstName.size() <= 100
+        && (!data.keys().contains('subjectCode') || (data.subjectCode is string && data.subjectCode.size() <= 64))
+        && (!data.keys().contains('subjectName') || (data.subjectName is string && data.subjectName.size() <= 200));
+    }
+
+    // Class Validation
+    function isValidClass(data) {
+      return data.keys().hasAll(['classId', 'grade', 'group'])
+        && data.classId is string && data.classId.size() <= 32
+        && data.grade is string && data.grade.size() <= 16
+        && data.group is string && data.group.size() <= 16;
+    }
+
+    // Schedule Validation
+    function isValidSchedule(data) {
+      return data.keys().hasAll(['scheduleId', 'classId', 'dayOfWeek', 'timeSlot', 'teacherId'])
+        && data.scheduleId is string && data.scheduleId.size() <= 128
+        && data.classId is string && data.classId.size() <= 32
+        && data.dayOfWeek is string && data.dayOfWeek.size() <= 32
+        && data.timeSlot is string && data.timeSlot.size() <= 32
+        && data.teacherId is string && data.teacherId.size() <= 64;
+    }
+
+    // Attendance Validation
+    function isValidAttendance(data) {
+      return data.keys().hasAll(['attendanceId', 'classId', 'date', 'records'])
+        && data.attendanceId is string && data.attendanceId.size() <= 128
+        && data.classId is string && data.classId.size() <= 32
+        && data.date is string && data.date.size() == 10
+        && data.records is list;
+    }
+
+    // Notification Validation
+    function isValidNotification(data) {
+      return data.keys().hasAll(['id', 'title', 'message', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.message is string && data.message.size() <= 1000
+        && data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Match blocks for collections
+    match /teachers/{teacherId} {
+      allow read: if true;
+      allow write: if isValidId(teacherId) && isValidTeacher(incoming(request));
+    }
+
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if isValidId(classId) && isValidClass(incoming(request));
+    }
+
+    match /schedules/{scheduleId} {
+      allow read: if true;
+      allow write: if isValidId(scheduleId) && isValidSchedule(incoming(request));
+    }
+
+    match /attendances/{attendanceId} {
+      allow read: if true;
+      allow write: if isValidId(attendanceId) && isValidAttendance(incoming(request));
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow write: if isValidId(notificationId) && isValidNotification(incoming(request));
+    }
+  }
+}

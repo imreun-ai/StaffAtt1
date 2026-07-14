@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Moul&family=Siemreap&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-moul: "Moul", "Khmer OS Moul", serif;
+  --font-siemreap: "Siemreap", "Khmer OS Siemreap", sans-serif;
+  --font-sans: "Siemreap", "Inter", sans-serif;
+}
+
+body {
+  font-family: var(--font-siemreap);
+  background-color: #f1f5f9;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
