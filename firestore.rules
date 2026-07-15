@@ -8,7 +8,7 @@ service cloud.firestore {
 
     // Helper functions
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.\\s]+$');
+      return id is string && id.size() > 0 && id.size() <= 128;
     }
 
     function incoming(req) {
@@ -64,27 +64,36 @@ service cloud.firestore {
     // Match blocks for collections
     match /teachers/{teacherId} {
       allow read: if true;
-      allow write: if isValidId(teacherId) && isValidTeacher(incoming(request));
+      allow create, update: if isValidId(teacherId) && isValidTeacher(incoming(request));
+      allow delete: if isValidId(teacherId);
     }
 
     match /classes/{classId} {
       allow read: if true;
-      allow write: if isValidId(classId) && isValidClass(incoming(request));
+      allow create, update: if isValidId(classId) && isValidClass(incoming(request));
+      allow delete: if isValidId(classId);
     }
 
     match /schedules/{scheduleId} {
       allow read: if true;
-      allow write: if isValidId(scheduleId) && isValidSchedule(incoming(request));
+      allow create, update: if isValidId(scheduleId) && isValidSchedule(incoming(request));
+      allow delete: if isValidId(scheduleId);
     }
 
     match /attendances/{attendanceId} {
       allow read: if true;
-      allow write: if isValidId(attendanceId) && isValidAttendance(incoming(request));
+      allow create, update: if isValidId(attendanceId) && isValidAttendance(incoming(request));
+      allow delete: if isValidId(attendanceId);
     }
 
     match /notifications/{notificationId} {
       allow read: if true;
-      allow write: if isValidId(notificationId) && isValidNotification(incoming(request));
+      allow create, update: if isValidId(notificationId) && isValidNotification(incoming(request));
+      allow delete: if isValidId(notificationId);
+    }
+
+    match /test/{testId} {
+      allow read: if true;
     }
   }
 }

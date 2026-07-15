@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { AttendanceEntity, Teacher } from '../types';
 import { BarChart2, Calendar, FileText, Download, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { getKhmerLunarDate, toKhmerDigits } from '../utils/khmerCalendar';
+import { exportMonthlyReportToExcel, exportAnnualReportToExcel } from '../utils/excelExporter';
 
 interface ReportsManagerProps {
   teachers: Teacher[];
@@ -30,6 +32,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
   const currentYear = new Date().getFullYear().toString();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState('07'); // Default to July
+  const [reportDate, setReportDate] = useState('2026-07-15');
 
   // Map teachers for quick name access
   const getTeacherName = (code: string) => {
@@ -78,7 +81,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       });
     });
 
-    return Object.values(reportMap).sort((a, b) => b.totalA + b.totalP - (a.totalA + a.totalP));
+    return Object.values(reportMap).sort((a, b) => a.name.localeCompare(b.name, 'km'));
   };
 
   // ==========================================
@@ -149,7 +152,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       });
     });
 
-    return Object.values(reportMap).sort((a, b) => b.yearlyA + b.yearlyP - (a.yearlyA + a.yearlyP));
+    return Object.values(reportMap).sort((a, b) => a.name.localeCompare(b.name, 'km'));
   };
 
   const monthlyData = getMonthlyReportData();
@@ -157,70 +160,23 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
 
   // Export current report to Excel
   const handleExportToExcel = () => {
-    const wb = XLSX.utils.book_new();
-    
     if (reportType === 'monthly') {
       const currentMonthKhmer = months.find(m => m.value === selectedMonth)?.khmer || selectedMonth;
-      const sheetData = [
-        [`របាយការណ៍វត្តមានគ្រូបង្រៀនប្រចាំខែ ${currentMonthKhmer} ឆ្នាំ ${selectedYear}`],
-        [],
-        ['ល.រ', 'ឈ្មោះគ្រូបង្រៀន', 'សរុបអវត្តមានឥតច្បាប់ (A)', 'សរុបអវត្តមានមានច្បាប់ (P)', 'សរុបអវត្តមានរួម']
-      ];
-
-      monthlyData.forEach((row, idx) => {
-        sheetData.push([
-          String(idx + 1),
-          row.name,
-          String(row.totalA),
-          String(row.totalP),
-          String(row.totalA + row.totalP)
-        ]);
-      });
-
-      const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
-      XLSX.utils.book_append_sheet(wb, ws, `ប្រចាំខែ ${currentMonthKhmer}`);
-      XLSX.writeFile(wb, `Monthly_Report_${selectedYear}_${selectedMonth}.xlsx`);
+      exportMonthlyReportToExcel(
+        currentMonthKhmer,
+        selectedYear,
+        monthlyData,
+        new Date(reportDate),
+        `Monthly_Report_${selectedYear}_${selectedMonth}.xls`
+      );
     } else {
-      // Annual report headers
-      const headers1 = ['ល.រ', 'ឈ្មោះគ្រូបង្រៀន'];
-      months.forEach(m => {
-        headers1.push(`${m.khmer} (A)`, `${m.khmer} (P)`);
-      });
-      headers1.push('សរុបអត់ច្បាប់ (A) ឆ្នាំ', 'សរុបមានច្បាប់ (P) ឆ្នាំ', 'សរុបរួម');
-
-      const sheetData = [
-        [`របាយការណ៍វត្តមានគ្រូបង្រៀនប្រចាំឆ្នាំ ${selectedYear}`],
-        [],
-        headers1
-      ];
-
-      annualData.forEach((row, idx) => {
-        const rowData = [
-          String(idx + 1),
-          row.name
-        ];
-
-        months.forEach(m => {
-          rowData.push(
-            String(row.monthly[m.value]?.A || 0),
-            String(row.monthly[m.value]?.P || 0)
-          );
-        });
-
-        rowData.push(
-          String(row.yearlyA),
-          String(row.yearlyP),
-          String(row.yearlyA + row.yearlyP)
-        );
-
-        sheetData.push(rowData);
-      });
-
-      const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 29 } }];
-      XLSX.utils.book_append_sheet(wb, ws, `ប្រចាំឆ្នាំ ${selectedYear}`);
-      XLSX.writeFile(wb, `Annual_Report_${selectedYear}.xlsx`);
+      exportAnnualReportToExcel(
+        selectedYear,
+        months,
+        annualData,
+        new Date(reportDate),
+        `Annual_Report_${selectedYear}.xls`
+      );
     }
   };
 
@@ -281,7 +237,11 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
           <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសឆ្នាំ៖</label>
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
+            onChange={(e) => {
+              const year = e.target.value;
+              setSelectedYear(year);
+              setReportDate(`${year}-${selectedMonth}-15`);
+            }}
             className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="2026">២០២៦</option>
@@ -296,7 +256,11 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
             <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសខែ៖</label>
             <select
               value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
+              onChange={(e) => {
+                const month = e.target.value;
+                setSelectedMonth(month);
+                setReportDate(`${selectedYear}-${month}-15`);
+              }}
               className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
             >
               {months.map(m => (
@@ -305,6 +269,37 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Report Date Selector (Monthly only) */}
+        {reportType === 'monthly' && (
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">កាលបរិច្ឆេទរបាយការណ៍ (គ.ស.)៖</label>
+              <input
+                type="date"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+                className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
+              />
+            </div>
+            
+            {/* Live Khmer Calendar Preview */}
+            <div className="flex flex-col bg-slate-50 border border-slate-150 px-4 py-1.5 rounded-xl text-xs gap-0.5 max-w-sm md:max-w-md">
+              <div>
+                <span className="font-bold text-slate-500">ចន្ទគតិ៖</span>{' '}
+                <span className="text-slate-800 font-medium font-sans">
+                  {getKhmerLunarDate(new Date(reportDate)).fullLunarStr}
+                </span>
+              </div>
+              <div>
+                <span className="font-bold text-slate-500">សុរិយគតិ៖</span>{' '}
+                <span className="text-slate-800 font-medium font-sans">
+                  {getKhmerLunarDate(new Date(reportDate)).fullSolarStr}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
@@ -394,10 +389,10 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                   </tr>
                   <tr className="bg-slate-100 text-[9px] text-slate-500 text-center">
                     {months.map(m => (
-                      <span key={m.value} className="contents">
+                      <Fragment key={m.value}>
                         <th className="px-1 py-1 font-semibold border-l border-slate-200 text-rose-600">A</th>
                         <th className="px-1 py-1 font-semibold text-amber-600">P</th>
-                      </span>
+                      </Fragment>
                     ))}
                     <th className="px-2 py-1 font-bold border-l border-slate-200 text-rose-600 bg-rose-50/50">A</th>
                     <th className="px-2 py-1 font-bold text-amber-600 bg-amber-50/50">P</th>
@@ -421,14 +416,14 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                         {months.map(m => {
                           const mCounts = row.monthly[m.value] || { A: 0, P: 0 };
                           return (
-                            <span key={m.value} className="contents">
+                            <Fragment key={m.value}>
                               <td className={`px-1 py-2 text-center border-l border-slate-100 font-sans font-medium ${mCounts.A > 0 ? 'text-rose-600 font-bold bg-rose-50/30' : 'text-slate-300'}`}>
                                 {mCounts.A > 0 ? mCounts.A : '-'}
                               </td>
                               <td className={`px-1 py-2 text-center font-sans font-medium ${mCounts.P > 0 ? 'text-amber-600 font-bold bg-amber-50/30' : 'text-slate-300'}`}>
                                 {mCounts.P > 0 ? mCounts.P : '-'}
                               </td>
-                            </span>
+                            </Fragment>
                           );
                         })}
 

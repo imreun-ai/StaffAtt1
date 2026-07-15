@@ -1,0 +1,23 @@
+{
+  "short_name": "វត្តមានគ្រូ",
+  "name": "ប្រព័ន្ធចុះវត្តមានគ្រូបង្រៀន",
+  "description": "ប្រព័ន្ធគ្រប់គ្រងចុះវត្តមានគ្រូបង្រៀន និងបុគ្គលិកសិក្សា",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/128/17163/17163937.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/17163/17163937.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "display": "standalone",
+  "orientation": "portrait"
+}
