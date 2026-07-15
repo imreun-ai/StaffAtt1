@@ -34,7 +34,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
   // Map teachers for quick name access
   const getTeacherName = (code: string) => {
     const t = teachers.find(teach => teach.teacherCode === code);
-    return t ? `${t.lastName} ${t.firstName}` : code;
+    return t ? `${t.lastName} ${t.firstName}`.trim() : code;
   };
 
   // ==========================================
@@ -47,7 +47,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
     teachers.forEach(t => {
       reportMap[t.teacherCode] = {
         teacherCode: t.teacherCode,
-        name: `${t.lastName} ${t.firstName}`,
+        name: `${t.lastName} ${t.firstName}`.trim(),
         totalA: 0,
         totalP: 0
       };
@@ -103,7 +103,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
 
       reportMap[t.teacherCode] = {
         teacherCode: t.teacherCode,
-        name: `${t.lastName} ${t.firstName}`,
+        name: `${t.lastName} ${t.firstName}`.trim(),
         monthly: monthlyObj,
         yearlyA: 0,
         yearlyP: 0
@@ -164,13 +164,12 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       const sheetData = [
         [`របាយការណ៍វត្តមានគ្រូបង្រៀនប្រចាំខែ ${currentMonthKhmer} ឆ្នាំ ${selectedYear}`],
         [],
-        ['ល.រ', 'កូដគ្រូ', 'ឈ្មោះគ្រូបង្រៀន', 'សរុបអវត្តមានឥតច្បាប់ (A)', 'សរុបអវត្តមានមានច្បាប់ (P)', 'សរុបអវត្តមានរួម']
+        ['ល.រ', 'ឈ្មោះគ្រូបង្រៀន', 'សរុបអវត្តមានឥតច្បាប់ (A)', 'សរុបអវត្តមានមានច្បាប់ (P)', 'សរុបអវត្តមានរួម']
       ];
 
       monthlyData.forEach((row, idx) => {
         sheetData.push([
           String(idx + 1),
-          row.teacherCode,
           row.name,
           String(row.totalA),
           String(row.totalP),
@@ -179,12 +178,12 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       });
 
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }];
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
       XLSX.utils.book_append_sheet(wb, ws, `ប្រចាំខែ ${currentMonthKhmer}`);
       XLSX.writeFile(wb, `Monthly_Report_${selectedYear}_${selectedMonth}.xlsx`);
     } else {
       // Annual report headers
-      const headers1 = ['ល.រ', 'កូដគ្រូ', 'ឈ្មោះគ្រូបង្រៀន'];
+      const headers1 = ['ល.រ', 'ឈ្មោះគ្រូបង្រៀន'];
       months.forEach(m => {
         headers1.push(`${m.khmer} (A)`, `${m.khmer} (P)`);
       });
@@ -199,7 +198,6 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       annualData.forEach((row, idx) => {
         const rowData = [
           String(idx + 1),
-          row.teacherCode,
           row.name
         ];
 
@@ -331,7 +329,6 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">ល.រ</th>
-                    <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">កូដគ្រូ</th>
                     <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">ឈ្មោះគ្រូបង្រៀន</th>
                     <th className="px-4 py-3 text-center font-bold text-rose-600 font-sans">អត់ច្បាប់ (A)</th>
                     <th className="px-4 py-3 text-center font-bold text-amber-600 font-sans">មានច្បាប់ (P)</th>
@@ -341,7 +338,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                 <tbody className="divide-y divide-slate-200 bg-white">
                   {monthlyData.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-sans">
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-400 font-sans">
                         មិនមានទិន្នន័យអវត្តមានក្នុងខែនេះទេ
                       </td>
                     </tr>
@@ -349,7 +346,6 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                     monthlyData.map((row, index) => (
                       <tr key={row.teacherCode} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-900 font-sans">{index + 1}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-slate-500 font-semibold">{row.teacherCode}</td>
                         <td className="px-4 py-3 font-semibold text-slate-800">{row.name}</td>
                         <td className="px-4 py-3 text-center text-rose-600 font-bold font-sans">
                           {row.totalA > 0 ? (
@@ -386,7 +382,6 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                 <thead className="bg-slate-50 font-sans text-[11px]">
                   <tr>
                     <th rowSpan={2} className="px-3 py-3 text-left font-bold text-slate-700">ល.រ</th>
-                    <th rowSpan={2} className="px-3 py-3 text-left font-bold text-slate-700">កូដគ្រូ</th>
                     <th rowSpan={2} className="px-3 py-3 text-left font-bold text-slate-700 min-w-[120px]">ឈ្មោះគ្រូ</th>
                     {months.map(m => (
                       <th colSpan={2} key={m.value} className="px-2 py-1 text-center font-bold text-slate-700 border-l border-slate-200">
@@ -412,7 +407,7 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                 <tbody className="divide-y divide-slate-200 bg-white">
                   {annualData.length === 0 ? (
                     <tr>
-                      <td colSpan={29} className="px-3 py-8 text-center text-slate-400 font-sans text-sm">
+                      <td colSpan={28} className="px-3 py-8 text-center text-slate-400 font-sans text-sm">
                         មិនមានទិន្នន័យអវត្តមានក្នុងឆ្នាំនេះទេ
                       </td>
                     </tr>
@@ -420,7 +415,6 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                     annualData.map((row, index) => (
                       <tr key={row.teacherCode} className="hover:bg-slate-50 transition-colors">
                         <td className="px-3 py-2 font-medium text-slate-900 font-sans">{index + 1}</td>
-                        <td className="px-3 py-2 font-mono text-slate-500 font-semibold">{row.teacherCode}</td>
                         <td className="px-3 py-2 font-bold text-slate-800 text-[13px]">{row.name}</td>
                         
                         {/* Monthly breakdowns */}

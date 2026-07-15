@@ -14,8 +14,7 @@ interface TeachersManagerProps {
 
 export default function TeachersManager({ teachers, onRefresh, onTriggerNotification }: TeachersManagerProps) {
   const [teacherCode, setTeacherCode] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [firstName, setFirstName] = useState('');
+  const [teacherName, setTeacherName] = useState('');
   const [subjectCode, setSubjectCode] = useState('');
   const [subjectName, setSubjectName] = useState('');
   
@@ -29,18 +28,20 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
   // Add or update teacher in Firebase
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teacherCode.trim() || !lastName.trim() || !firstName.trim()) {
-      setError('សូមបំពេញព័ត៌មានចាំបាច់៖ កូដគ្រូ គោត្តនាម និងនាម!');
+    if (!teacherName.trim() || !subjectCode.trim()) {
+      setError('សូមបំពេញព័ត៌មានចាំបាច់៖ ឈ្មោះគ្រូបង្រៀន និងកូដមុខវិជ្ជា!');
       return;
     }
 
     setLoading(true);
     setError('');
 
+    const finalTeacherCode = editingTeacher ? editingTeacher.teacherCode : subjectCode.trim().toUpperCase();
+
     const teacherData: Teacher = {
-      teacherCode: teacherCode.trim().toUpperCase(),
-      lastName: lastName.trim(),
-      firstName: firstName.trim(),
+      teacherCode: finalTeacherCode,
+      lastName: teacherName.trim(),
+      firstName: '',
       subjectCode: subjectCode.trim().toUpperCase(),
       subjectName: subjectName.trim()
     };
@@ -49,14 +50,13 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
       await setDoc(doc(db, 'teachers', teacherData.teacherCode), teacherData);
       onTriggerNotification(
         'កែសម្រួលព័ត៌មានគ្រូជោគជ័យ',
-        `គ្រូបង្រៀន ${teacherData.lastName} ${teacherData.firstName} ត្រូវបានរក្សាទុកក្នុងប្រព័ន្ធ។`,
+        `គ្រូបង្រៀន ${teacherData.lastName} ត្រូវបានរក្សាទុកក្នុងប្រព័ន្ធ។`,
         'info'
       );
       
       // Reset inputs
       setTeacherCode('');
-      setLastName('');
-      setFirstName('');
+      setTeacherName('');
       setSubjectCode('');
       setSubjectName('');
       setEditingTeacher(null);
@@ -72,8 +72,7 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
   const startEdit = (teacher: Teacher) => {
     setEditingTeacher(teacher);
     setTeacherCode(teacher.teacherCode);
-    setLastName(teacher.lastName);
-    setFirstName(teacher.firstName);
+    setTeacherName((teacher.lastName + ' ' + teacher.firstName).trim());
     setSubjectCode(teacher.subjectCode || '');
     setSubjectName(teacher.subjectName || '');
   };
@@ -82,8 +81,7 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
   const cancelEdit = () => {
     setEditingTeacher(null);
     setTeacherCode('');
-    setLastName('');
-    setFirstName('');
+    setTeacherName('');
     setSubjectCode('');
     setSubjectName('');
   };
@@ -206,58 +204,29 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1">
-                កូដគ្រូ <span className="text-rose-500">*</span>
+                ឈ្មោះគ្រូបង្រៀន <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
-                value={teacherCode}
-                onChange={(e) => setTeacherCode(e.target.value)}
-                placeholder="ឧ. T001"
-                disabled={!!editingTeacher} // Code is primary key, non-editable during edit
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50 disabled:bg-slate-100 disabled:text-slate-400"
-                id="input_teacher_code"
+                value={teacherName}
+                onChange={(e) => setTeacherName(e.target.value)}
+                placeholder="ឧ. សុខ គន្ធា"
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                id="input_teacher_name"
               />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  គោត្តនាម <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="ឧ. សុខ"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  id="input_teacher_lastname"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">
-                  នាម <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="ឧ. តារា"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  id="input_teacher_firstname"
-                />
-              </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-600 mb-1">
-                កូដមុខវិជ្ជា
+                កូដមុខវិជ្ជា <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
                 value={subjectCode}
                 onChange={(e) => setSubjectCode(e.target.value)}
                 placeholder="ឧ. MATH7"
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={!!editingTeacher}
+                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:bg-slate-100 disabled:text-slate-400"
                 id="input_teacher_subject_code"
               />
             </div>
@@ -270,7 +239,7 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
                 type="text"
                 value={subjectName}
                 onChange={(e) => setSubjectName(e.target.value)}
-                placeholder="ឧ. គណិតវិទ្យា ថ្នាក់ទី៧"
+                placeholder="ឧ. គណិតវិទ្យា"
                 className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 id="input_teacher_subject_name"
               />
@@ -312,7 +281,6 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
               <thead className="bg-slate-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">ល.រ</th>
-                  <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">កូដគ្រូ</th>
                   <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">គោត្តនាម - នាម</th>
                   <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">កូដមុខវិជ្ជា</th>
                   <th className="px-4 py-3 text-left font-bold text-slate-700 font-sans">មុខវិជ្ជាបង្រៀន</th>
@@ -322,7 +290,7 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
               <tbody className="divide-y divide-slate-200 bg-white">
                 {teachers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-slate-400 font-sans">
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-400 font-sans">
                       មិនទាន់មានគ្រូបង្រៀននៅក្នុងបញ្ជីនៅឡើយទេ
                     </td>
                   </tr>
@@ -330,15 +298,10 @@ export default function TeachersManager({ teachers, onRefresh, onTriggerNotifica
                   teachers.map((teacher, index) => (
                     <tr key={teacher.teacherCode} className="hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-3 font-medium text-slate-900 font-sans">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-semibold font-mono text-xs">
-                          {teacher.teacherCode}
-                        </span>
-                      </td>
                       <td className="px-4 py-3 font-semibold text-slate-800">
-                        {teacher.lastName} {teacher.firstName}
+                        {(teacher.lastName + ' ' + teacher.firstName).trim()}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                      <td className="px-4 py-3 font-mono text-xs text-slate-500 font-bold">
                         {teacher.subjectCode || '-'}
                       </td>
                       <td className="px-4 py-3 text-slate-600">

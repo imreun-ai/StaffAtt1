@@ -33,8 +33,11 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Map teachers for quick lookup
+  // Map teachers for quick lookup by subject code and teacher code
   const teacherMap = teachers.reduce((acc, t) => {
+    if (t.subjectCode) {
+      acc[t.subjectCode.toUpperCase()] = t;
+    }
     acc[t.teacherCode] = t;
     return acc;
   }, {} as Record<string, Teacher>);
@@ -169,8 +172,8 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
         
         recordsList.forEach(rec => {
           if (rec.status !== 'Present') {
-            const t = teacherMap[rec.teacherId];
-            const name = t ? `${t.lastName} ${t.firstName}` : rec.teacherId;
+            const t = teacherMap[rec.teacherId.toUpperCase()] || teacherMap[rec.teacherId];
+            const name = t ? `${t.lastName} ${t.firstName}`.trim() : rec.teacherId;
             const statusLabel = rec.status === 'A' ? 'អត់ច្បាប់ (A)' : 'មានច្បាប់ (P)';
             detailParts.push(`ម៉ោង ${rec.timeSlot}: ${name} (${statusLabel})`);
           }
@@ -307,8 +310,8 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
             ) : (
               <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                 {scheduledSlots.map((slot) => {
-                  const t = teacherMap[slot.teacherId];
-                  const teacherName = t ? `${t.lastName} ${t.firstName}` : `កូដគ្រូ៖ ${slot.teacherId}`;
+                  const t = teacherMap[slot.teacherId.toUpperCase()] || teacherMap[slot.teacherId];
+                  const teacherName = t ? `${t.lastName} ${t.firstName}`.trim() : `មុខវិជ្ជា៖ ${slot.teacherId}`;
                   const currentStatus = attendanceRecords[slot.timeSlot] || 'Present';
 
                   return (
@@ -321,9 +324,6 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
                         <div className="flex items-center space-x-2">
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded">
                             ម៉ោង {slot.timeSlot}
-                          </span>
-                          <span className="text-xs text-slate-400 font-mono">
-                            {slot.teacherId}
                           </span>
                         </div>
                         <h4 className="text-sm font-bold text-slate-800 mt-1 font-sans">

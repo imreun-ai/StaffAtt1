@@ -22,9 +22,22 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Map teacher codes to names for easy display
+  // Map teacher codes or subject codes to names for easy display
   const teacherMap = teachers.reduce((acc, t) => {
-    acc[t.teacherCode] = `${t.lastName} ${t.firstName}`;
+    const fullName = `${t.lastName} ${t.firstName}`.trim();
+    if (t.subjectCode) {
+      acc[t.subjectCode.toUpperCase()] = fullName;
+    }
+    acc[t.teacherCode] = fullName;
+    return acc;
+  }, {} as Record<string, string>);
+
+  // Map teacher codes or subject codes to subject codes for easy display
+  const subjectCodeMap = teachers.reduce((acc, t) => {
+    if (t.subjectCode) {
+      acc[t.subjectCode.toUpperCase()] = t.subjectCode;
+    }
+    acc[t.teacherCode] = t.subjectCode || '';
     return acc;
   }, {} as Record<string, string>);
 
@@ -238,7 +251,8 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
                   {DAYS_KHMER.map(day => (
                     TIME_SLOTS.map((slot, slotIdx) => {
                       const sched = getScheduleForCell(day, slot);
-                      const tName = sched ? (teacherMap[sched.teacherId] || sched.teacherId) : null;
+                      const tName = sched ? (teacherMap[sched.teacherId.toUpperCase()] || sched.teacherId) : null;
+                      const subjCode = sched ? (subjectCodeMap[sched.teacherId.toUpperCase()] || '') : '';
                       return (
                         <td
                           key={`${day}-${slot}`}
@@ -251,9 +265,11 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
                               <span className="font-semibold text-blue-800 block text-[11px] leading-tight font-sans">
                                 {tName}
                               </span>
-                              <span className="font-bold text-[10px] text-slate-400 font-mono block">
-                                {sched.teacherId}
-                              </span>
+                              {subjCode && (
+                                <span className="font-bold text-[10px] text-slate-400 font-mono block">
+                                  {subjCode}
+                                </span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-slate-300 font-mono">-</span>

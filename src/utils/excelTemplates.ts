@@ -11,24 +11,22 @@ export const TIME_SLOTS = ['7-8', '8-9', '9-10', '10-11', '2-3', '3-4', '4-5'];
  */
 export function downloadTeacherTemplate() {
   const headers = [
-    ['កូដគ្រូ (Teacher Code)', 'គោត្តនាម (Last Name)', 'នាម (First Name)', 'កូដមុខវិជ្ជា (Subject Code)', 'មុខវិជ្ជាបង្រៀន (Subject Taught)']
+    ['ឈ្មោះគ្រូបង្រៀន (Teacher Name)', 'កូដមុខវិជ្ជា (Subject Code)', 'មុខវិជ្ជាបង្រៀន (Subject Taught)']
   ];
   
   const sampleData = [
-    ['T001', 'សុខ', 'គន្ធា', 'MATH7', 'គណិតវិទ្យា ថ្នាក់ទី៧'],
-    ['T002', 'ចាន់', 'តារា', 'PHYS8', 'រូបវិទ្យា ថ្នាក់ទី៨'],
-    ['T003', 'លី', 'ម៉ារី', 'CHEM9', 'គីមីវិទ្យា ថ្នាក់ទី៩'],
-    ['T004', 'កែវ', 'សុផល', 'KHM7', 'អក្សរសាស្ត្រខ្មែរ ថ្នាក់ទី៧'],
-    ['T005', 'សេង', 'ណារ៉ុង', 'ENG10', 'ភាសាអង់គ្លេស ថ្នាក់ទី១០']
+    ['សុខ គន្ធា', 'MATH7', 'គណិតវិទ្យា'],
+    ['ចាន់ តារា', 'PHYS8', 'រូបវិទ្យា'],
+    ['លី ម៉ារី', 'CHEM9', 'គីមីវិទ្យា'],
+    ['កែវ សុផល', 'KHM7', 'អក្សរសាស្ត្រខ្មែរ'],
+    ['សេង ណារ៉ុង', 'ENG10', 'ភាសាអង់គ្លេស']
   ];
 
   const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]);
   
   // Apply column widths
   ws['!cols'] = [
-    { wch: 25 }, // Teacher Code
-    { wch: 25 }, // Last Name
-    { wch: 25 }, // First Name
+    { wch: 30 }, // Teacher Name
     { wch: 25 }, // Subject Code
     { wch: 35 }  // Subject Taught
   ];
@@ -67,8 +65,8 @@ export function downloadScheduleTemplate() {
 
   // Sample schedule rows
   const sampleData = [
-    ['7A', 'T001', 'T001', 'T004', '', 'T005', '', '', 'T002', 'T002', '', '', '', '', '', '', 'T003', 'T003', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    ['8B', '', '', 'T002', 'T002', '', '', '', 'T001', 'T001', '', '', '', '', '', '', 'T005', 'T005', '', '', '', '', 'T003', 'T003', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+    ['7A', 'MATH7', 'MATH7', 'KHM7', '', 'ENG10', '', '', 'PHYS8', 'PHYS8', '', '', '', '', '', '', 'CHEM9', 'CHEM9', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    ['8B', '', '', 'PHYS8', 'PHYS8', '', '', '', 'MATH7', 'MATH7', '', '', '', '', '', '', 'ENG10', 'ENG10', '', '', '', '', 'CHEM9', 'CHEM9', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
   ];
 
   const ws = XLSX.utils.aoa_to_sheet([row1, row2, ...sampleData]);
@@ -128,18 +126,16 @@ export function parseTeachersExcel(file: File): Promise<Teacher[]> {
           const row = rows[i];
           if (!row || row.length === 0) continue;
           
-          const teacherCode = String(row[0] || '').trim();
-          const lastName = String(row[1] || '').trim();
-          const firstName = String(row[2] || '').trim();
-          const subjectCode = String(row[3] || '').trim();
-          const subjectName = String(row[4] || '').trim();
+          const fullName = String(row[0] || '').trim();
+          const subjectCode = String(row[1] || '').trim();
+          const subjectName = String(row[2] || '').trim();
 
-          if (teacherCode && lastName && firstName) {
+          if (fullName && subjectCode) {
             teachers.push({
-              teacherCode,
-              lastName,
-              firstName,
-              subjectCode,
+              teacherCode: subjectCode.toUpperCase(),
+              lastName: fullName,
+              firstName: '',
+              subjectCode: subjectCode.toUpperCase(),
               subjectName
             });
           }
