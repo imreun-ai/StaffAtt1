@@ -45,7 +45,8 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
   // Determine Khmer day of the week from selected date
   const getKhmerDayOfWeek = (dateStr: string) => {
     if (!dateStr) return '';
-    const dateObj = new Date(dateStr);
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
     const dayIdx = dateObj.getDay(); // 0 is Sunday, 1 is Monday, ..., 6 is Saturday
     
     // JS getDay(): 0: Sunday, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
