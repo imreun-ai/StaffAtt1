@@ -110,12 +110,32 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
   };
 
   // Build schedule matrix for selected class
-  const getScheduleForCell = (day: string, slot: string) => {
-    if (!selectedClass) return null;
-    return schedules.find(s => s.classId === selectedClass && s.dayOfWeek === day && s.timeSlot === slot);
+  const getScheduleForCell = (clsId: string, day: string, slot: string) => {
+    return schedules.find(s => s.classId === clsId && s.dayOfWeek === day && s.timeSlot === slot);
   };
 
-  const activeClasses = Array.from(new Set(schedules.map(s => s.classId))).sort();
+  const parseClassId = (classId: string) => {
+    const match = classId.match(/^(\d+)(.*)$/);
+    if (match) {
+      return {
+        grade: parseInt(match[1], 10),
+        group: match[2]
+      };
+    }
+    return { grade: 0, group: classId };
+  };
+
+  const activeClasses = Array.from(new Set(schedules.map(s => s.classId))).sort((a, b) => {
+    const classA = parseClassId(a);
+    const classB = parseClassId(b);
+    if (classA.grade !== classB.grade) {
+      return classA.grade - classB.grade;
+    }
+    return classA.group.localeCompare(classB.group);
+  });
+  const classesToRender = selectedClass
+    ? [selectedClass]
+    : (activeClasses.length > 0 ? activeClasses : classes.map(c => c.classId));
 
   return (
     <div className="space-y-6 pb-20 md:pb-0" id="schedule_manager_container">
@@ -193,7 +213,7 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
               className="w-full sm:w-40 px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               id="select_class_schedule_filter"
             >
-              <option value="">-- ជ្រើសរើសថ្នាក់ --</option>
+              <option value="">-- បង្ហាញទាំងអស់ --</option>
               {(activeClasses.length > 0 ? activeClasses : classes.map(c => c.classId)).map(clsId => (
                 <option key={clsId} value={clsId}>ថ្នាក់ {clsId}</option>
               ))}
@@ -201,11 +221,11 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
           </div>
         </div>
 
-        {!selectedClass ? (
+        {classesToRender.length === 0 ? (
           <div className="text-center py-16 bg-slate-50 border border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center">
             <FileSpreadsheet className="h-12 w-12 text-slate-300 mb-2" />
             <p className="text-sm text-slate-500 font-sans">
-              សូមជ្រើសរើសថ្នាក់ខាងលើ ដើម្បីបង្ហាញតារាងកាលវិភាគរួមរបស់ថ្នាក់នោះ។
+              មិនមានទិន្នន័យកាលវិភាគសម្រាប់បង្ហាញឡើយ។ សូមនាំចូលកាលវិភាគជាមុនសិន។
             </p>
           </div>
         ) : (
@@ -214,8 +234,8 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
               <thead className="bg-slate-900 text-white font-moul">
                 {/* Day Header Row */}
                 <tr>
-                  <th rowSpan={2} className="px-4 py-4 text-center border-r border-slate-800 text-xs tracking-normal font-normal">
-                    ថ្ងៃ / ម៉ោង
+                  <th rowSpan={2} className="px-4 py-4 text-center border-r border-slate-800 text-xs tracking-normal font-normal bg-slate-950 sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.15)]">
+                    ថ្នាក់
                   </th>
                   {DAYS_KHMER.map(day => (
                     <th
@@ -244,41 +264,43 @@ export default function ScheduleManager({ schedules, teachers, classes, onRefres
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 bg-white">
-                <tr className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-4 text-center font-bold text-slate-800 border-r border-slate-200 font-sans bg-slate-50/55">
-                    {selectedClass}
-                  </td>
-                  {DAYS_KHMER.map(day => (
-                    TIME_SLOTS.map((slot, slotIdx) => {
-                      const sched = getScheduleForCell(day, slot);
-                      const tName = sched ? (teacherMap[sched.teacherId.toUpperCase()] || sched.teacherId) : null;
-                      const subjCode = sched ? (subjectCodeMap[sched.teacherId.toUpperCase()] || '') : '';
-                      return (
-                        <td
-                          key={`${day}-${slot}`}
-                          className={`px-1 py-3 text-center text-xs ${
-                            slotIdx === TIME_SLOTS.length - 1 ? 'border-r border-slate-200' : 'border-r border-slate-100'
-                          } ${sched ? 'bg-blue-50/40' : ''}`}
-                        >
-                          {sched ? (
-                            <div className="space-y-0.5">
-                              <span className="font-semibold text-blue-800 block text-[11px] leading-tight font-sans">
-                                {tName}
-                              </span>
-                              {subjCode && (
-                                <span className="font-bold text-[10px] text-slate-400 font-mono block">
-                                  {subjCode}
+                {classesToRender.map(clsId => (
+                  <tr key={clsId} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-4 text-center font-bold text-slate-800 border-r border-slate-200 font-sans bg-slate-50/90 sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
+                      ថ្នាក់ {clsId}
+                    </td>
+                    {DAYS_KHMER.map(day => (
+                      TIME_SLOTS.map((slot, slotIdx) => {
+                        const sched = getScheduleForCell(clsId, day, slot);
+                        const tName = sched ? (teacherMap[sched.teacherId.toUpperCase()] || sched.teacherId) : null;
+                        const subjCode = sched ? (subjectCodeMap[sched.teacherId.toUpperCase()] || '') : '';
+                        return (
+                          <td
+                            key={`${clsId}-${day}-${slot}`}
+                            className={`px-1 py-3 text-center text-xs min-w-[75px] ${
+                              slotIdx === TIME_SLOTS.length - 1 ? 'border-r border-slate-200' : 'border-r border-slate-100'
+                            } ${sched ? 'bg-blue-50/40' : ''}`}
+                          >
+                            {sched ? (
+                              <div className="space-y-0.5">
+                                <span className="font-semibold text-blue-800 block text-[11px] leading-tight font-sans">
+                                  {tName}
                                 </span>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-slate-300 font-mono">-</span>
-                          )}
-                        </td>
-                      );
-                    })
-                  ))}
-                </tr>
+                                {subjCode && (
+                                  <span className="font-bold text-[10px] text-slate-400 font-mono block">
+                                    {subjCode}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-slate-300 font-mono">-</span>
+                            )}
+                          </td>
+                        );
+                      })
+                    ))}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

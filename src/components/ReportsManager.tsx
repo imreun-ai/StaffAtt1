@@ -29,10 +29,28 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
     { value: '12', khmer: 'ធ្នូ', english: 'December' }
   ];
 
-  const currentYear = new Date().getFullYear().toString();
+  const yearsList = Array.from({ length: 15 }, (_, i) => (2026 + i).toString()); // 2026 to 2040
+  const sysYear = new Date().getFullYear().toString();
+  const currentYear = (parseInt(sysYear, 10) >= 2026 && parseInt(sysYear, 10) <= 2040) ? sysYear : '2026';
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState('07'); // Default to July
   const [reportDate, setReportDate] = useState('2026-07-15');
+
+  // Map of selected year for each month in the annual report
+  const [monthYears, setMonthYears] = useState<Record<string, string>>({
+    '01': '2026',
+    '02': '2026',
+    '03': '2026',
+    '04': '2026',
+    '05': '2026',
+    '06': '2026',
+    '07': '2026',
+    '08': '2026',
+    '09': '2026',
+    '10': '2026',
+    '11': '2026',
+    '12': '2026',
+  });
 
   // Map teachers for quick name access
   const getTeacherName = (code: string) => {
@@ -107,33 +125,34 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       };
     });
 
-    // Filter attendances for selected year
-    const yearPrefix = `${selectedYear}-`;
-    const yearlyAttendances = attendances.filter(att => att.date.startsWith(yearPrefix));
+    // Process all attendances
+    attendances.forEach(att => {
+      const parts = att.date.split('-');
+      const yearPart = parts[0];
+      const monthPart = parts[1];
+      if (!yearPart || !monthPart) return;
 
-    yearlyAttendances.forEach(att => {
-      // Extract month "MM" from "YYYY-MM-DD"
-      const monthPart = att.date.split('-')[1];
-      if (!monthPart) return;
-
-      att.records.forEach(rec => {
-        const teacherCode = rec.teacherId;
-        
-        // Only count if the teacher exists in our teacher list
-        if (reportMap[teacherCode]) {
-          if (rec.status === 'A') {
-            if (reportMap[teacherCode].monthly[monthPart]) {
-              reportMap[teacherCode].monthly[monthPart].A += 1;
+      // Check if this attendance date matches the selected year for this month
+      if (monthYears[monthPart] === yearPart) {
+        att.records.forEach(rec => {
+          const teacherCode = rec.teacherId;
+          
+          // Only count if the teacher exists in our teacher list
+          if (reportMap[teacherCode]) {
+            if (rec.status === 'A') {
+              if (reportMap[teacherCode].monthly[monthPart]) {
+                reportMap[teacherCode].monthly[monthPart].A += 1;
+              }
+              reportMap[teacherCode].yearlyA += 1;
+            } else if (rec.status === 'P') {
+              if (reportMap[teacherCode].monthly[monthPart]) {
+                reportMap[teacherCode].monthly[monthPart].P += 1;
+              }
+              reportMap[teacherCode].yearlyP += 1;
             }
-            reportMap[teacherCode].yearlyA += 1;
-          } else if (rec.status === 'P') {
-            if (reportMap[teacherCode].monthly[monthPart]) {
-              reportMap[teacherCode].monthly[monthPart].P += 1;
-            }
-            reportMap[teacherCode].yearlyP += 1;
           }
-        }
-      });
+        });
+      }
     });
 
     return Object.values(reportMap).sort((a, b) => a.name.localeCompare(b.name, 'km'));
@@ -154,12 +173,15 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
         `Monthly_Report_${selectedYear}_${selectedMonth}.xls`
       );
     } else {
+      const uniqueYears = Array.from(new Set(Object.values(monthYears))).sort();
+      const yearSuffix = uniqueYears.length === 1 ? uniqueYears[0] : 'Custom';
       exportAnnualReportToExcel(
         selectedYear,
         months,
         annualData,
         new Date(reportDate),
-        `Annual_Report_${selectedYear}.xls`
+        `Annual_Report_${yearSuffix}.xls`,
+        monthYears
       );
     }
   };
@@ -215,82 +237,144 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
       </div>
 
       {/* Filter panel */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap gap-4 items-center">
-        {/* Year Filter */}
-        <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសឆ្នាំ៖</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => {
-              const year = e.target.value;
-              setSelectedYear(year);
-              setReportDate(`${year}-${selectedMonth}-15`);
-            }}
-            className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            <option value="2026">២០២៦</option>
-            <option value="2027">២០២៧</option>
-            <option value="2025">២០២៥</option>
-          </select>
-        </div>
-
-        {/* Month Filter (for monthly report only) */}
-        {reportType === 'monthly' && (
-          <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសខែ៖</label>
-            <select
-              value={selectedMonth}
-              onChange={(e) => {
-                const month = e.target.value;
-                setSelectedMonth(month);
-                setReportDate(`${selectedYear}-${month}-15`);
-              }}
-              className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
-            >
-              {months.map(m => (
-                <option key={m.value} value={m.value}>
-                  ខែ {m.khmer} ({m.english})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Report Date Selector (Monthly only) */}
-        {reportType === 'monthly' && (
-          <div className="flex flex-wrap items-center gap-3">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-4">
+        <div className="flex flex-wrap gap-4 items-center">
+          {/* Year Filter (Monthly only) */}
+          {reportType === 'monthly' && (
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1">កាលបរិច្ឆេទរបាយការណ៍ (គ.ស.)៖</label>
-              <input
-                type="date"
-                value={reportDate}
-                onChange={(e) => setReportDate(e.target.value)}
-                className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
-              />
+              <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសឆ្នាំ៖</label>
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  const year = e.target.value;
+                  setSelectedYear(year);
+                  setReportDate(`${year}-${selectedMonth}-15`);
+                }}
+                className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                {yearsList.map(yr => (
+                  <option key={yr} value={yr}>{toKhmerDigits(yr)}</option>
+                ))}
+              </select>
             </div>
-            
-            {/* Live Khmer Calendar Preview */}
-            <div className="flex flex-col bg-slate-50 border border-slate-150 px-4 py-1.5 rounded-xl text-xs gap-0.5 max-w-sm md:max-w-md">
+          )}
+
+          {/* Month Filter (for monthly report only) */}
+          {reportType === 'monthly' && (
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1">ជ្រើសរើសខែ៖</label>
+              <select
+                value={selectedMonth}
+                onChange={(e) => {
+                  const month = e.target.value;
+                  setSelectedMonth(month);
+                  setReportDate(`${selectedYear}-${month}-15`);
+                }}
+                className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
+              >
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>
+                    ខែ {m.khmer} ({m.english})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Report Date Selector (Monthly only) */}
+          {reportType === 'monthly' && (
+            <div className="flex flex-wrap items-center gap-3">
               <div>
-                <span className="font-bold text-slate-500">ចន្ទគតិ៖</span>{' '}
-                <span className="text-slate-800 font-medium font-sans">
-                  {getKhmerLunarDate(new Date(reportDate)).fullLunarStr}
-                </span>
+                <label className="block text-xs font-bold text-slate-500 mb-1">កាលបរិច្ឆេទរបាយការណ៍ (គ.ស.)៖</label>
+                <input
+                  type="date"
+                  value={reportDate}
+                  onChange={(e) => setReportDate(e.target.value)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white font-sans"
+                />
               </div>
-              <div>
-                <span className="font-bold text-slate-500">សុរិយគតិ៖</span>{' '}
-                <span className="text-slate-800 font-medium font-sans">
-                  {getKhmerLunarDate(new Date(reportDate)).fullSolarStr}
-                </span>
+              
+              {/* Live Khmer Calendar Preview */}
+              <div className="flex flex-col bg-slate-50 border border-slate-150 px-4 py-1.5 rounded-xl text-xs gap-0.5 max-w-sm md:max-w-md">
+                <div>
+                  <span className="font-bold text-slate-500">ចន្ទគតិ៖</span>{' '}
+                  <span className="text-slate-800 font-medium font-sans">
+                    {getKhmerLunarDate(new Date(reportDate)).fullLunarStr}
+                  </span>
+                </div>
+                <div>
+                  <span className="font-bold text-slate-500">សុរិយគតិ៖</span>{' '}
+                  <span className="text-slate-800 font-medium font-sans">
+                    {getKhmerLunarDate(new Date(reportDate)).fullSolarStr}
+                  </span>
+                </div>
               </div>
+            </div>
+          )}
+
+          <div className="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-xl flex items-center gap-1.5 border border-blue-100 ml-auto">
+            <TrendingUp className="h-4 w-4 text-blue-650" />
+            <span>ទិន្នន័យត្រូវបានធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តពី Firebase</span>
+          </div>
+        </div>
+
+        {/* Dynamic Year Selection for each month (Annual only) */}
+        {reportType === 'annual' && (
+          <div className="w-full space-y-4 pt-4 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <span className="text-sm font-bold text-slate-700 font-moul">
+                <span className="text-blue-600">■</span> ជ្រើសរើសឆ្នាំតាមខែនីមួយៗ៖
+              </span>
+              
+              {/* Quick Set All Months */}
+              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+                <span className="font-semibold text-slate-600">កំណត់ឆ្នាំគ្រប់ខែក្នុងពេលតែមួយ៖</span>
+                <select
+                  onChange={(e) => {
+                    const year = e.target.value;
+                    if (year) {
+                      const updated = { ...monthYears };
+                      Object.keys(updated).forEach(m => {
+                        updated[m] = year;
+                      });
+                      setMonthYears(updated);
+                    }
+                  }}
+                  defaultValue=""
+                  className="px-2 py-1 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                >
+                  <option value="" disabled>-- ជ្រើសរើស --</option>
+                  {yearsList.map(yr => (
+                    <option key={yr} value={yr}>{toKhmerDigits(yr)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Grid of 12 months with dropdown selectors */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {months.map(m => (
+                <div key={m.value} className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl flex flex-col justify-between gap-1.5">
+                  <span className="text-xs font-bold text-slate-600">ខែ {m.khmer} ({m.english})</span>
+                  <select
+                    value={monthYears[m.value] || '2026'}
+                    onChange={(e) => {
+                      setMonthYears({
+                        ...monthYears,
+                        [m.value]: e.target.value
+                      });
+                    }}
+                    className="px-2 py-1 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white font-semibold"
+                  >
+                    {yearsList.map(yr => (
+                      <option key={yr} value={yr}>{toKhmerDigits(yr)}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
             </div>
           </div>
         )}
-
-        <div className="text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-xl flex items-center gap-1.5 border border-blue-100 ml-auto">
-          <TrendingUp className="h-4 w-4 text-blue-650" />
-          <span>ទិន្នន័យត្រូវបានធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តពី Firebase</span>
-        </div>
       </div>
 
       {/* Reports Render Table Card */}
@@ -353,7 +437,12 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
           <div className="space-y-4">
             <h3 className="text-md font-moul text-slate-700 flex items-center gap-1.5">
               <Calendar className="h-5 w-5 text-blue-600" />
-              របាយការណ៍អវត្តមានប្រចាំឆ្នាំ {selectedYear}
+              របាយការណ៍អវត្តមានតាមខែនីមួយៗ ឆ្នាំ {
+                Array.from(new Set(Object.values(monthYears)))
+                  .sort()
+                  .map(toKhmerDigits)
+                  .join(', ')
+              }
             </h3>
 
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -364,7 +453,12 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
                     <th rowSpan={2} className="px-3 py-3 text-left font-bold text-slate-700 min-w-[120px]">ឈ្មោះគ្រូ</th>
                     {months.map(m => (
                       <th colSpan={2} key={m.value} className="px-2 py-1 text-center font-bold text-slate-700 border-l border-slate-200">
-                        {m.khmer}
+                        <div className="flex flex-col items-center">
+                          <span>{m.khmer}</span>
+                          <span className="text-[9px] text-slate-400 font-sans font-normal">
+                            ({toKhmerDigits(monthYears[m.value] || '2026')})
+                          </span>
+                        </div>
                       </th>
                     ))}
                     <th colSpan={3} className="px-3 py-1 text-center font-bold text-slate-800 border-l border-slate-200 bg-slate-100">

@@ -72,9 +72,11 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
       return;
     }
 
+    const cleanStr = (val: string) => (val || '').replace(/[\u200B-\u200D\uFEFF\u00A0\u200E\u200F]/g, '').trim().toUpperCase();
+
     // Filter schedules matching selectedClassId and dayOfWeek
     const slots = schedules.filter(
-      s => s.classId === selectedClassId && s.dayOfWeek === khmerDay
+      s => cleanStr(s.classId) === cleanStr(selectedClassId) && cleanStr(s.dayOfWeek) === cleanStr(khmerDay)
     );
 
     // Sort slots according to standard TIME_SLOTS order

@@ -235,9 +235,20 @@ export function exportAnnualReportToExcel(
   months: { value: string; khmer: string; english: string }[],
   data: AnnualReportRow[],
   reportDate: Date,
-  fileName: string
+  fileName: string,
+  monthYears?: Record<string, string>
 ) {
   const { fullLunarStr, fullSolarStr } = getKhmerLunarDate(reportDate);
+
+  let titleYearStr = toKhmerDigits(yearNormal);
+  if (monthYears) {
+    const uniqueYears = Array.from(new Set(Object.values(monthYears))).sort();
+    if (uniqueYears.length === 1) {
+      titleYearStr = toKhmerDigits(uniqueYears[0]);
+    } else {
+      titleYearStr = uniqueYears.map(toKhmerDigits).join(', ');
+    }
+  }
 
   // XML Header with namespace declarations and styles
   let xml = `<?xml version="1.0"?>
@@ -373,7 +384,7 @@ export function exportAnnualReportToExcel(
    <!-- Row 5: Main Report Title -->
    <Row ss:Height="25">
     <Cell ss:MergeAcross="28" ss:StyleID="reportTitle">
-     <Data ss:Type="String">របាយការណ៍អវត្តមានគ្រូបង្រៀនប្រចាំឆ្នាំ ${toKhmerDigits(yearNormal)}</Data>
+     <Data ss:Type="String">របាយការណ៍អវត្តមានគ្រូបង្រៀនប្រចាំឆ្នាំ ${titleYearStr}</Data>
     </Cell>
    </Row>
    
@@ -386,7 +397,8 @@ export function exportAnnualReportToExcel(
 `;
 
   months.forEach(m => {
-    xml += `    <Cell ss:MergeAcross="1" ss:StyleID="tableHeader"><Data ss:Type="String">${m.khmer}</Data></Cell>\n`;
+    const yearStr = monthYears && monthYears[m.value] ? ' (' + toKhmerDigits(monthYears[m.value]) + ')' : '';
+    xml += `    <Cell ss:MergeAcross="1" ss:StyleID="tableHeader"><Data ss:Type="String">${m.khmer}${yearStr}</Data></Cell>\n`;
   });
 
   xml += `    <Cell ss:MergeDown="1" ss:StyleID="tableHeader"><Data ss:Type="String">ឥតច្បាប់ (A)</Data></Cell>

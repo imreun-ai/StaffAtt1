@@ -1,6 +1,11 @@
 import * as XLSX from 'xlsx';
 import { Teacher, ClassEntity, ScheduleEntity } from '../types';
 
+// Helper to sanitize invisible characters like zero-width space, non-breaking space, etc.
+export function sanitizeString(str: string): string {
+  return str.replace(/[\u200B-\u200D\uFEFF\u00A0\u200E\u200F]/g, '').trim();
+}
+
 // Days and time slots constant
 export const DAYS_KHMER = ['ចន្ទ', 'អង្គារ', 'ពុធ', 'ព្រហស្បតិ៍', 'សុក្រ', 'សៅរ៍'];
 export const DAYS_ENGLISH = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -126,9 +131,9 @@ export function parseTeachersExcel(file: File): Promise<Teacher[]> {
           const row = rows[i];
           if (!row || row.length === 0) continue;
           
-          const fullName = String(row[0] || '').trim();
-          const subjectCode = String(row[1] || '').trim();
-          const subjectName = String(row[2] || '').trim();
+          const fullName = sanitizeString(String(row[0] || ''));
+          const subjectCode = sanitizeString(String(row[1] || ''));
+          const subjectName = sanitizeString(String(row[2] || ''));
 
           if (fullName && subjectCode) {
             teachers.push({
@@ -182,7 +187,7 @@ export function parseScheduleExcel(file: File): Promise<ScheduleEntity[]> {
         for (let r = 2; r < rows.length; r++) {
           const row = rows[r];
           if (!row || row.length === 0) continue;
-          const classId = String(row[0] || '').trim().toUpperCase();
+          const classId = sanitizeString(String(row[0] || '')).toUpperCase();
           if (!classId) continue;
 
           // Process each day & slot
@@ -190,14 +195,16 @@ export function parseScheduleExcel(file: File): Promise<ScheduleEntity[]> {
             const startCol = 1 + dayIdx * TIME_SLOTS.length;
             TIME_SLOTS.forEach((slot, slotIdx) => {
               const colIdx = startCol + slotIdx;
-              const teacherCode = String(row[colIdx] || '').trim();
+              const teacherCode = sanitizeString(String(row[colIdx] || '')).toUpperCase();
               
               if (teacherCode) {
+                const sanitizedDay = sanitizeString(day);
+                const sanitizedSlot = sanitizeString(slot);
                 schedules.push({
-                  scheduleId: `${classId}-${day}-${slot}`,
+                  scheduleId: `${classId}-${sanitizedDay}-${sanitizedSlot}`,
                   classId,
-                  dayOfWeek: day,
-                  timeSlot: slot,
+                  dayOfWeek: sanitizedDay,
+                  timeSlot: sanitizedSlot,
                   teacherId: teacherCode
                 });
               }
