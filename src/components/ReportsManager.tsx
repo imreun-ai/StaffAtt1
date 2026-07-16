@@ -63,20 +63,14 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
     monthlyAttendances.forEach(att => {
       att.records.forEach(rec => {
         const teacherCode = rec.teacherId;
-        // Make sure teacher exists in our map, or create placeholder
-        if (!reportMap[teacherCode]) {
-          reportMap[teacherCode] = {
-            teacherCode,
-            name: getTeacherName(teacherCode),
-            totalA: 0,
-            totalP: 0
-          };
-        }
-
-        if (rec.status === 'A') {
-          reportMap[teacherCode].totalA += 1;
-        } else if (rec.status === 'P') {
-          reportMap[teacherCode].totalP += 1;
+        
+        // Only count if the teacher exists in our teacher list
+        if (reportMap[teacherCode]) {
+          if (rec.status === 'A') {
+            reportMap[teacherCode].totalA += 1;
+          } else if (rec.status === 'P') {
+            reportMap[teacherCode].totalP += 1;
+          }
         }
       });
     });
@@ -124,30 +118,20 @@ export default function ReportsManager({ teachers, attendances }: ReportsManager
 
       att.records.forEach(rec => {
         const teacherCode = rec.teacherId;
-        if (!reportMap[teacherCode]) {
-          const monthlyObj: Record<string, { A: number; P: number }> = {};
-          months.forEach(m => {
-            monthlyObj[m.value] = { A: 0, P: 0 };
-          });
-          reportMap[teacherCode] = {
-            teacherCode,
-            name: getTeacherName(teacherCode),
-            monthly: monthlyObj,
-            yearlyA: 0,
-            yearlyP: 0
-          };
-        }
-
-        if (rec.status === 'A') {
-          if (reportMap[teacherCode].monthly[monthPart]) {
-            reportMap[teacherCode].monthly[monthPart].A += 1;
+        
+        // Only count if the teacher exists in our teacher list
+        if (reportMap[teacherCode]) {
+          if (rec.status === 'A') {
+            if (reportMap[teacherCode].monthly[monthPart]) {
+              reportMap[teacherCode].monthly[monthPart].A += 1;
+            }
+            reportMap[teacherCode].yearlyA += 1;
+          } else if (rec.status === 'P') {
+            if (reportMap[teacherCode].monthly[monthPart]) {
+              reportMap[teacherCode].monthly[monthPart].P += 1;
+            }
+            reportMap[teacherCode].yearlyP += 1;
           }
-          reportMap[teacherCode].yearlyA += 1;
-        } else if (rec.status === 'P') {
-          if (reportMap[teacherCode].monthly[monthPart]) {
-            reportMap[teacherCode].monthly[monthPart].P += 1;
-          }
-          reportMap[teacherCode].yearlyP += 1;
         }
       });
     });

@@ -389,8 +389,8 @@ export default function AttendanceMarker({ classes, teachers, schedules, onRefre
 
             <div className="space-y-3 font-sans text-sm">
               <div className="flex justify-between items-center py-2 border-b border-slate-200">
-                <span className="text-slate-500">គ្រូបង្រៀនសរុប៖</span>
-                <span className="font-bold text-slate-800">{scheduledSlots.length} នាក់</span>
+                <span className="text-slate-500">ម៉ោងបង្រៀនសរុប៖</span>
+                <span className="font-bold text-slate-800">{scheduledSlots.length} ម៉ោង</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-200 text-rose-600 font-semibold">
                 <span>សរុបអត់ច្បាប់ (A)៖</span>
